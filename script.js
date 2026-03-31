@@ -7,6 +7,7 @@
   const nav = $(".nav");
   const toggle = $(".nav-toggle");
   const list = $(".nav-list");
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const setProgress = () => {
     const h = document.documentElement.scrollHeight - window.innerHeight;
@@ -22,39 +23,49 @@
     const open = !nav.classList.contains("open");
     nav.classList.toggle("open", open);
     toggle.setAttribute("aria-expanded", String(open));
+    toggle.setAttribute("aria-label", open ? "Cerrar menú" : "Abrir menú");
+    document.documentElement.style.overflow = open ? "hidden" : "";
   });
   list.addEventListener("click", (e) => {
     if (e.target.tagName === "A") {
       nav.classList.remove("open");
       toggle.setAttribute("aria-expanded", "false");
+      toggle.setAttribute("aria-label", "Abrir menú");
+      document.documentElement.style.overflow = "";
     }
   });
 
   $$('.nav-list a[href^="#"], a[href^="#"]').forEach((a) => {
     a.addEventListener("click", (e) => {
       const id = a.getAttribute("href");
-      if (!id || id === "#" || id === "#inicio") return;
+      if (!id || id === "#") return;
       const el = document.querySelector(id);
       if (!el) return;
       e.preventDefault();
       const offset = header ? header.offsetHeight : 70;
       const y = el.getBoundingClientRect().top + window.scrollY - offset;
-      window.scrollTo({ top: y, behavior: "smooth" });
+      const behavior = reduceMotion || a.classList.contains("skip-link") ? "auto" : "smooth";
+      window.scrollTo({ top: y, behavior });
+      if (a.classList.contains("skip-link")) el.focus({ preventScroll: true });
     });
   });
 
-  const io = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((ent) => {
-        if (ent.isIntersecting) {
-          ent.target.classList.add("reveal-in");
-          io.unobserve(ent.target);
-        }
-      });
-    },
-    { threshold: 0.15, rootMargin: "0px 0px -40px 0px" }
-  );
-  $$(".reveal").forEach((el) => io.observe(el));
+  if (reduceMotion) {
+    $$(".reveal").forEach((el) => el.classList.add("reveal-in"));
+  } else {
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((ent) => {
+          if (ent.isIntersecting) {
+            ent.target.classList.add("reveal-in");
+            io.unobserve(ent.target);
+          }
+        });
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -40px 0px" }
+    );
+    $$(".reveal").forEach((el) => io.observe(el));
+  }
 
   const wrap = $(".testi-wrap");
   if (wrap) {
