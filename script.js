@@ -67,6 +67,98 @@
     $$(".reveal").forEach((el) => io.observe(el));
   }
 
+  const clamp01 = (n) => Math.max(0, Math.min(1, n));
+  const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+  const mulberry32 = (a) => () => {
+    let t = (a += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+
+  const scatterEls = Array.from(document.querySelectorAll(".section:not(.hero) .reveal"));
+  if (!reduceMotion && scatterEls.length) {
+    scatterEls.forEach((el) => el.classList.add("scatter"));
+
+    const START_AT = 0.92;
+    const END_AT = 0.38;
+    const BASE_OPACITY = 0.16;
+
+    const state = scatterEls.map((el) => ({ el, top: 0, x0: 0, y0: 0, rot0: 0, scale0: 1, curve: 0, arc: 0 }));
+
+    const measure = () => {
+      const y = window.scrollY;
+      const vw = window.innerWidth || document.documentElement.clientWidth || 1;
+      const vh = window.innerHeight || document.documentElement.clientHeight || 1;
+      const base = Math.min(vw, vh);
+      const spread = base * (vw < 480 ? 0.78 : vw < 1024 ? 0.92 : 1.05);
+
+      state.forEach((s, i) => {
+        const rect = s.el.getBoundingClientRect();
+        const rng = mulberry32(i + 1);
+        const xSign = i % 2 === 0 ? 1 : -1;
+        const ySign = i % 3 === 0 ? 1 : -1;
+        s.top = rect.top + y;
+        s.x0 = xSign * (rng() * 0.85 + 0.15) * spread;
+        s.y0 = ySign * (rng() * 0.75 + 0.25) * spread * 0.62;
+        s.rot0 = (rng() * 2 - 1) * 14;
+        s.scale0 = 0.92 + rng() * 0.12;
+        s.curve = (rng() * 2 - 1) * spread * 0.22;
+        s.arc = (rng() * 2 - 1) * spread * 0.18;
+        s.el.style.willChange = "transform,opacity";
+      });
+    };
+
+    let lastY = window.scrollY;
+    let ticking = false;
+    const apply = () => {
+      ticking = false;
+      const y = lastY;
+      const vh = window.innerHeight || document.documentElement.clientHeight || 1;
+
+      state.forEach((s) => {
+        const start = s.top - vh * START_AT;
+        const end = s.top - vh * END_AT;
+        const t = clamp01((y - start) / (end - start));
+        const e = easeOutCubic(t);
+        const inv = 1 - e;
+        const curve = Math.sin(Math.PI * e) * s.curve * inv;
+        const parab = 1 - Math.pow(2 * e - 1, 2);
+        const arc = parab * s.arc * inv;
+        const x = s.x0 * inv + curve;
+        const yy = s.y0 * inv + arc;
+        const rot = s.rot0 * inv;
+        const sc = 1 + (s.scale0 - 1) * inv;
+        const op = BASE_OPACITY + (1 - BASE_OPACITY) * e;
+        s.el.style.opacity = String(op);
+        s.el.style.transform = `translate3d(${x.toFixed(2)}px, ${yy.toFixed(2)}px, 0) rotate(${rot.toFixed(2)}deg) scale(${sc.toFixed(4)})`;
+      });
+    };
+
+    const onScroll = () => {
+      lastY = window.scrollY;
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(apply);
+    };
+    const onResize = () => {
+      measure();
+      onScroll();
+    };
+
+    measure();
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize, { passive: true });
+    window.addEventListener("load", onResize, { once: true });
+  } else if (reduceMotion && scatterEls.length) {
+    scatterEls.forEach((el) => {
+      el.classList.add("scatter");
+      el.style.opacity = "1";
+      el.style.transform = "none";
+    });
+  }
+
   const wrap = $(".testi-wrap");
   if (wrap) {
     const items = $$(".testi");
