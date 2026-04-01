@@ -704,8 +704,8 @@ button {
 }
 
 .scatter.reveal {
-    opacity: 1;
-    transform: none;
+    opacity: .62;
+    transform: translate3d(0, 18px, 0) scale(.985);
     transition: none
 }
 
