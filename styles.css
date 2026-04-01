@@ -358,9 +358,20 @@ button {
 
 .device .pulse {
     position: absolute;
-    inset: auto 20% 20% auto;
     width: 18px;
     height: 18px;
+    border-radius: 50%;
+    left: 0;
+    top: 0;
+    transform: translate3d(-9999px, -9999px, 0);
+    will-change: transform;
+    pointer-events: none
+}
+
+.device .pulse:before {
+    content: "";
+    position: absolute;
+    inset: 0;
     border-radius: 50%;
     background: radial-gradient(circle, var(--primary), transparent 60%);
     animation: pulse 2.6s infinite
