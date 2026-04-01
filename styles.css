@@ -405,6 +405,23 @@ button {
     color: var(--muted)
 }
 
+.faq details>summary {
+    cursor: pointer
+}
+
+.faq details>summary::-webkit-details-marker {
+    display: none
+}
+
+.faq details>summary:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 4px
+}
+
+.faq details>p {
+    margin-top: 10px
+}
+
 .icon {
     width: 36px;
     height: 36px;
